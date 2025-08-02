@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+
+{% block title %}Tickets - QuickDesk{% endblock %}
+
+{% block content %}
+<div class="ticket-list-header">
+    <h1>All Tickets</h1>
+    <div class="ticket-actions">
+        <a href="{% url 'ticket_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Ticket
+        </a>
+    </div>
+</div>
+
+<div class="ticket-filter-section">
+    <form method="get" class="filter-form">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="id_status">Status</label>
+                {{ filter_form.status }}
+            </div>
+            
+            <div class="filter-group">
+                <label for="id_category">Category</label>
+                {{ filter_form.category }}
+            </div>
+            
+            <div class="filter-group">
+                <label for="id_priority">Priority</label>
+                {{ filter_form.priority }}
+            </div>
+            
+            <div class="filter-group">
+                <label for="id_search">Search</label>
+                {{ filter_form.search }}
+            </div>
+            
+            <div class="filter-buttons">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <a href="{% url 'ticket_list' %}" class="btn btn-outline">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="tickets-container">
+    {% if tickets %}
+    <div class="tickets-table-wrapper">
+        <table class="tickets-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Created</th>
+                    <th>Created By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td class="ticket-id">#{{ ticket.id }}</td>
+                    <td class="ticket-title">
+                        <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.subject }}</a>
+                    </td>
+                    <td>
+                        <span class="category-badge">{{ ticket.category.name }}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                    </td>
+                    <td>
+                        <span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span>
+                    </td>
+                    <td>{{ ticket.created_at|date:"M d, Y" }}</td>
+                    <td>{{ ticket.created_by.username }}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'ticket_detail' ticket.id %}" class="action-btn" title="View">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if ticket.created_by == request.user or request.user.is_staff %}
+                        <a href="{% url 'ticket_update' ticket.id %}" class="action-btn" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="pagination-btn">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="pagination-btn">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% endif %}
+
+            <span class="current-page">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="pagination-btn">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="pagination-btn">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-ticket-alt"></i>
+        </div>
+        <p>No tickets found</p>
+        <a href="{% url 'ticket_create' %}" class="btn btn-primary">Create Your First Ticket</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .ticket-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .ticket-filter-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-form {
+        width: 100%;
+    }
+    
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+    
+    .filter-group {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .filter-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #4b5563;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.875rem;
+    }
+    
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .tickets-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+    }
+    
+    .tickets-table-wrapper {
+        overflow-x: auto;
+    }
+    
+    .tickets-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .tickets-table th,
+    .tickets-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .tickets-table th {
+        font-weight: 600;
+        color: #4b5563;
+        background-color: #f9fafb;
+    }
+    
+    .tickets-table tr:hover {
+        background-color: #f9fafb;
+    }
+    
+    .ticket-id {
+        font-weight: 600;
+        color: #6b7280;
+    }
+    
+    .ticket-title a {
+        color: #1f2937;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .ticket-title a:hover {
+        color: #667eea;
+    }
+    
+    .category-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: #e0e7ff;
+        color: #4f46e5;
+    }
+    
+    .status-badge,
+    .priority-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-open {
+        background-color: #fee2e2;
+        color: #ef4444;
+    }
+    
+    .status-pending {
+        background-color: #fef3c7;
+        color: #f59e0b;
+    }
+    
+    .status-resolved {
+        background-color: #d1fae5;
+        color: #10b981;
+    }
+    
+    .priority-low {
+        background-color: #dbeafe;
+        color: #3b82f6;
+    }
+    
+    .priority-medium {
+        background-color: #fef3c7;
+        color: #f59e0b;
+    }
+    
+    .priority-high {
+        background-color: #fee2e2;
+        color: #ef4444;
+    }
+    
+    .actions-cell {
+        white-space: nowrap;
+    }
+    
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        color: #6b7280;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        background-color: #f3f4f6;
+        color: #667eea;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background-color: #f3f4f6;
+        color: #4b5563;
+        text-decoration: none;
+        margin: 0 0.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .pagination-btn:hover {
+        background-color: #e5e7eb;
+        color: #1f2937;
+    }
+    
+    .current-page {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 1rem;
+        font-weight: 500;
+        color: #4b5563;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .filter-row {
+            flex-direction: column;
+        }
+        
+        .filter-group {
+            width: 100%;
+        }
+        
+        .filter-buttons {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .tickets-table th:nth-child(3),
+        .tickets-table td:nth-child(3),
+        .tickets-table th:nth-child(5),
+        .tickets-table td:nth-child(5),
+        .tickets-table th:nth-child(6),
+        .tickets-table td:nth-child(6) {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}

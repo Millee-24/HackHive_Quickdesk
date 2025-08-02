@@ -1,0 +1,513 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ ticket.subject }} - QuickDesk{% endblock %}
+
+{% block content %}
+<div class="ticket-detail-container">
+    <div class="ticket-header">
+        <div class="ticket-header-left">
+            <div class="ticket-badges">
+                <span class="ticket-id">#{{ ticket.id }}</span>
+                <span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                <span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span>
+                <span class="category-badge">{{ ticket.category.name }}</span>
+            </div>
+            <h1 class="ticket-title">{{ ticket.subject }}</h1>
+            <div class="ticket-meta">
+                <span><i class="fas fa-user"></i> {{ ticket.created_by.username }}</span>
+                <span><i class="fas fa-calendar"></i> {{ ticket.created_at|date:"M d, Y" }}</span>
+                <span><i class="fas fa-eye"></i> {{ ticket.views }} views</span>
+                <span><i class="fas fa-thumbs-up"></i> {{ ticket.votes.count }} votes</span>
+            </div>
+        </div>
+        <div class="ticket-header-right">
+            {% if ticket.created_by == request.user or request.user.is_staff %}
+            <a href="{% url 'ticket_update' ticket.id %}" class="btn btn-outline">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            {% endif %}
+            
+            <form method="post" action="{% url 'ticket_vote' ticket.id %}" class="vote-form">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if user_has_voted %}btn-primary{% else %}btn-outline{% endif %}">
+                    <i class="fas fa-thumbs-up"></i> {% if user_has_voted %}Voted{% else %}Vote{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="ticket-content-wrapper">
+        <div class="ticket-main-content">
+            <div class="content-card">
+                <h2>Description</h2>
+                <div class="ticket-description">
+                    {{ ticket.description|linebreaks }}
+                </div>
+                
+                {% if ticket.attachments.all %}
+                <div class="ticket-attachments">
+                    <h3>Attachments</h3>
+                    <div class="attachments-list">
+                        {% for attachment in ticket.attachments.all %}
+                        <a href="{{ attachment.file.url }}" class="attachment-item" target="_blank">
+                            <i class="fas fa-paperclip"></i>
+                            <span>{{ attachment.file.name|slice:"14:" }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="content-card">
+                <h2>Comments ({{ ticket.comments.count }})</h2>
+                
+                {% if ticket.comments.all %}
+                <div class="comments-list">
+                    {% for comment in ticket.comments.all %}
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <div class="comment-author">
+                                <i class="fas fa-user-circle"></i>
+                                <span>{{ comment.user.username }}</span>
+                            </div>
+                            <div class="comment-date">
+                                <i class="fas fa-clock"></i>
+                                <span>{{ comment.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                        </div>
+                        <div class="comment-content">
+                            {{ comment.content|linebreaks }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-comments">
+                    <p>No comments yet</p>
+                </div>
+                {% endif %}
+                
+                <div class="comment-form-container">
+                    <h3>Add a Comment</h3>
+                    <form method="post" action="{% url 'ticket_comment' ticket.id %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ comment_form.content }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Submit
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ticket-sidebar">
+            <div class="content-card">
+                <h2>Ticket Details</h2>
+                <div class="detail-item">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">
+                        <span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Priority</div>
+                    <div class="detail-value">
+                        <span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Category</div>
+                    <div class="detail-value">{{ ticket.category.name }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Created By</div>
+                    <div class="detail-value">{{ ticket.created_by.username }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Created On</div>
+                    <div class="detail-value">{{ ticket.created_at|date:"M d, Y H:i" }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Last Updated</div>
+                    <div class="detail-value">{{ ticket.updated_at|date:"M d, Y H:i" }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Views</div>
+                    <div class="detail-value">{{ ticket.views }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Votes</div>
+                    <div class="detail-value">{{ ticket.votes.count }}</div>
+                </div>
+            </div>
+            
+            <div class="content-card">
+                <h2>Similar Tickets</h2>
+                {% if similar_tickets %}
+                <div class="similar-tickets-list">
+                    {% for similar in similar_tickets %}
+                    <a href="{% url 'ticket_detail' similar.id %}" class="similar-ticket-item">
+                        <div class="similar-ticket-title">{{ similar.title }}</div>
+                        <div class="similar-ticket-meta">
+                            <span class="status-badge status-{{ similar.status|lower }}">{{ similar.get_status_display }}</span>
+                            <span><i class="fas fa-calendar"></i> {{ similar.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-similar">
+                    <p>No similar tickets found</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ticket-detail-container {
+        margin-bottom: 3rem;
+    }
+    
+    .ticket-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .ticket-header-left {
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .ticket-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .ticket-id {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    .status-badge,
+    .priority-badge,
+    .category-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-open {
+        background-color: #fee2e2;
+        color: #ef4444;
+    }
+    
+    .status-pending {
+        background-color: #fef3c7;
+        color: #f59e0b;
+    }
+    
+    .status-resolved {
+        background-color: #d1fae5;
+        color: #10b981;
+    }
+    
+    .priority-low {
+        background-color: #dbeafe;
+        color: #3b82f6;
+    }
+    
+    .priority-medium {
+        background-color: #fef3c7;
+        color: #f59e0b;
+    }
+    
+    .priority-high {
+        background-color: #fee2e2;
+        color: #ef4444;
+    }
+    
+    .category-badge {
+        background-color: #e0e7ff;
+        color: #4f46e5;
+    }
+    
+    .ticket-title {
+        font-size: 1.8rem;
+        margin: 0.5rem 0;
+        color: #1f2937;
+    }
+    
+    .ticket-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .ticket-meta i {
+        margin-right: 0.25rem;
+    }
+    
+    .ticket-header-right {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #667eea;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #5a67d8;
+    }
+    
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid #667eea;
+        color: #667eea;
+    }
+    
+    .btn-outline:hover {
+        background-color: #667eea;
+        color: white;
+    }
+    
+    .vote-form {
+        display: inline;
+    }
+    
+    .ticket-content-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+    }
+    
+    .content-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .content-card h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        color: #1f2937;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+    }
+    
+    .content-card h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        color: #1f2937;
+    }
+    
+    .ticket-description {
+        color: #4b5563;
+        line-height: 1.6;
+    }
+    
+    .ticket-attachments {
+        margin-top: 2rem;
+    }
+    
+    .attachments-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .attachment-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: #f3f4f6;
+        border-radius: 8px;
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .attachment-item:hover {
+        background-color: #e5e7eb;
+    }
+    
+    .attachment-item i {
+        margin-right: 0.5rem;
+        color: #6b7280;
+    }
+    
+    .comments-list {
+        margin-bottom: 2rem;
+    }
+    
+    .comment-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+    
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        color: #4b5563;
+    }
+    
+    .comment-date {
+        color: #6b7280;
+    }
+    
+    .comment-content {
+        color: #4b5563;
+        line-height: 1.6;
+    }
+    
+    .empty-comments,
+    .empty-similar {
+        text-align: center;
+        padding: 1.5rem 0;
+        color: #6b7280;
+    }
+    
+    .comment-form-container {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .detail-value {
+        color: #1f2937;
+        font-weight: 500;
+        text-align: right;
+    }
+    
+    .similar-tickets-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .similar-ticket-item {
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .similar-ticket-item:hover {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+    }
+    
+    .similar-ticket-title {
+        color: #1f2937;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .similar-ticket-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+    }
+    
+    .similar-ticket-meta i {
+        margin-right: 0.25rem;
+    }
+    
+    @media (max-width: 768px) {
+        .ticket-content-wrapper {
+            grid-template-columns: 1fr;
+        }
+        
+        .ticket-header {
+            flex-direction: column;
+        }
+        
+        .ticket-header-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>
+{% endblock %}

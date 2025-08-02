@@ -1,0 +1,537 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - QuickDesk{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="dashboard-title">
+        <h1>Dashboard</h1>
+        <p class="dashboard-subtitle">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+    </div>
+    <div class="dashboard-actions">
+        <a href="{% url 'ticket_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Ticket
+        </a>
+        <a href="{% url 'ticket_list' %}" class="btn btn-secondary">
+            <i class="fas fa-list"></i> All Tickets
+        </a>
+    </div>
+</div>
+
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-ticket-alt"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ total_tickets }}</h3>
+            <p>Total Tickets</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #10b981;">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ resolved_tickets }}</h3>
+            <p>Resolved</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #f59e0b;">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ pending_tickets }}</h3>
+            <p>Pending</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #ef4444;">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ open_tickets }}</h3>
+            <p>Open</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-sections">
+    {% if is_agent %}
+    <!-- Agent Dashboard -->
+    <div class="dashboard-section">
+        <h2>Assigned to Me</h2>
+        {% if recent_tickets %}
+        <div class="ticket-list">
+            {% for ticket in recent_tickets %}
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <span class="ticket-id">#{{ ticket.id }}</span>
+                    <span class="ticket-status status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                </div>
+                <h3 class="ticket-title">
+                    <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.subject }}</a>
+                </h3>
+                <div class="ticket-meta">
+                    <span><i class="fas fa-user"></i> {{ ticket.created_by.username }}</span>
+                    <span><i class="fas fa-calendar"></i> {{ ticket.created_at|date:"M d, Y" }}</span>
+                    {% if ticket.category %}
+                    <span><i class="fas fa-tag"></i> {{ ticket.category.name }}</span>
+                    {% endif %}
+                    <span><i class="fas fa-flag"></i> {{ ticket.get_priority_display }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="view-all">
+            <a href="{% url 'ticket_list' %}" class="btn btn-outline">View All Assigned Tickets</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <p>No tickets assigned to you</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="dashboard-section">
+        <h2>Unassigned Tickets</h2>
+        {% if unassigned_tickets %}
+        <div class="ticket-list">
+            {% for ticket in unassigned_tickets %}
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <span class="ticket-id">#{{ ticket.id }}</span>
+                    <span class="ticket-status status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                </div>
+                <h3 class="ticket-title">
+                    <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.subject }}</a>
+                </h3>
+                <div class="ticket-meta">
+                    <span><i class="fas fa-user"></i> {{ ticket.created_by.username }}</span>
+                    <span><i class="fas fa-calendar"></i> {{ ticket.created_at|date:"M d, Y" }}</span>
+                    {% if ticket.category %}
+                    <span><i class="fas fa-tag"></i> {{ ticket.category.name }}</span>
+                    {% endif %}
+                    <span><i class="fas fa-flag"></i> {{ ticket.get_priority_display }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="view-all">
+            <a href="{% url 'ticket_list' %}" class="btn btn-outline">View All Tickets</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <p>No unassigned tickets</p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- User Dashboard -->
+    <div class="dashboard-section">
+        <h2>Recent Tickets</h2>
+        {% if recent_tickets %}
+        <div class="ticket-list">
+            {% for ticket in recent_tickets %}
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <span class="ticket-id">#{{ ticket.id }}</span>
+                    <span class="ticket-status status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                </div>
+                <h3 class="ticket-title">
+                    <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.subject }}</a>
+                </h3>
+                <div class="ticket-meta">
+                    <span><i class="fas fa-calendar"></i> {{ ticket.created_at|date:"M d, Y" }}</span>
+                    {% if ticket.category %}
+                    <span><i class="fas fa-tag"></i> {{ ticket.category.name }}</span>
+                    {% endif %}
+                    <span><i class="fas fa-flag"></i> {{ ticket.get_priority_display }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="view-all">
+            <a href="{% url 'ticket_list' %}" class="btn btn-outline">View All Tickets</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <p>No tickets found</p>
+            <a href="{% url 'ticket_create' %}" class="btn btn-primary">Create Your First Ticket</a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        animation: fadeInDown 0.6s ease-out;
+    }
+    
+    .dashboard-title {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        position: relative;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-header h1:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        border-radius: 2px;
+    }
+    
+    .dashboard-subtitle {
+        color: var(--text-light);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    .dashboard-actions {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--border-radius-full);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.5rem;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: var(--shadow-md);
+        transition: transform var(--transition-fast);
+    }
+    
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1);
+    }
+    
+    .stat-content h3 {
+        font-size: 2rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+    
+    .stat-content p {
+        margin: 0;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+    
+    .dashboard-sections {
+        display: grid;
+        gap: 2rem;
+        animation: fadeInUp 1s ease-out;
+    }
+    
+    .dashboard-section {
+        background: var(--card-bg);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    }
+    
+    .dashboard-section:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .dashboard-section h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        color: var(--text-dark);
+        position: relative;
+        padding-bottom: 0.5rem;
+        display: inline-block;
+    }
+    
+    .dashboard-section h2:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 40px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        border-radius: 2px;
+    }
+    
+    .ticket-list {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .ticket-card {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--border-radius-md);
+        padding: 1.25rem;
+        transition: all var(--transition-normal);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .ticket-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-3px);
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    .ticket-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        align-items: center;
+    }
+    
+    .ticket-id {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .ticket-status {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--border-radius-full);
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    
+    .ticket-status:before {
+        content: '';
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    
+    .status-open {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .status-open:before {
+        background-color: var(--danger-color);
+    }
+    
+    .status-pending {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--accent-color);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-pending:before {
+        background-color: var(--accent-color);
+    }
+    
+    .status-resolved {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--secondary-color);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-resolved:before {
+        background-color: var(--secondary-color);
+    }
+    
+    .ticket-title {
+        margin: 0.75rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .ticket-title a {
+        color: var(--text-dark);
+        text-decoration: none;
+        transition: color var(--transition-fast);
+    }
+    
+    .ticket-title a:hover {
+        color: var(--primary-color);
+    }
+    
+    .ticket-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: var(--text-light);
+    }
+    
+    .ticket-meta span {
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .ticket-meta i {
+        margin-right: 0.35rem;
+        opacity: 0.7;
+    }
+    
+    .view-all {
+        margin-top: 1.5rem;
+        text-align: center;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--border-radius-md);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all var(--transition-normal);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-outline:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .btn-outline:after {
+        content: '→';
+        transition: transform var(--transition-normal);
+    }
+    
+    .btn-outline:hover:after {
+        transform: translateX(3px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        animation: fadeIn 1s ease-out;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        color: rgba(209, 213, 219, 0.7);
+        margin-bottom: 1.5rem;
+        animation: pulse 3s infinite;
+    }
+    
+    .empty-state p {
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+    }
+    
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .dashboard-stats {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .stat-card {
+            padding: 1.25rem;
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 1rem;
+        }
+        
+        .stat-content h3 {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

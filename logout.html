@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Logged Out - QuickDesk{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 2rem auto; text-align: center;">
+    <h2 style="margin-bottom: 1.5rem; color: #667eea;">You have been logged out</h2>
+    
+    <p style="margin-bottom: 2rem;">Thank you for using QuickDesk. You have been successfully logged out.</p>
+    
+    <a href="{% url 'login' %}" class="btn btn-primary" style="width: 100%;">
+        <i class="fas fa-sign-in-alt"></i> Log in again
+    </a>
+    
+    <p style="margin-top: 1.5rem;">
+        <a href="{% url 'home' %}" style="color: #667eea;">
+            <i class="fas fa-home"></i> Return to Home
+        </a>
+    </p>
+</div>
+{% endblock %}
